@@ -6,11 +6,46 @@ use regex::Regex;
 // Hand parser for text files at:
 // http://web.archive.org/web/20110205042259/http://www.outflopped.com/questions/286/obfuscated-datamined-hand-histories
 fn main() {
-    let hands = raw("hands-full.txt");
+    let hands = raw("hands-lots.txt");
     let hands = parse(hands);
 
-    //println!("{:#?}", hands);
     println!("Hands: {}", hands.len());
+
+    let mut flops = 0;
+    let mut turns = 0;
+    let mut rivers = 0;
+    let mut shows = 0;
+
+    let mut unknown = 0;
+    let mut nlh = 0;
+    let mut nlh_he = 0;
+
+    for hand in hands {
+        match hand.game {
+            Game::Unknown(_) => unknown += 1,
+            Game::NoLimitHoldemHeadsUp => nlh_he += 1,
+            Game::NoLimitHoldem => {
+                nlh += 1;
+
+                for action in hand.actions {
+                    match action {
+                        Action::Flop(_, _, _) => flops += 1,
+                        Action::Turn(_) => turns += 1,
+                        Action::River(_) => rivers +=1,
+                        Action::Show(_, _, _) => {
+                            shows += 1;
+                            break;
+                        },
+                        _ => ()
+                    }
+                };
+            },
+        };
+
+    }
+
+    println!("NLH: {}\nNLH HE: {}\nUnknown: {}", nlh, nlh_he, unknown);
+    println!("Flops: {}\nTurns: {}\nRivers: {}\nShowdowns: {}", flops, turns, rivers, shows);
 }
 
 #[derive(Clone, Debug)]
@@ -32,7 +67,7 @@ impl Hand {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 struct Amount {
     integer: u32,
     fraction: u8
@@ -71,7 +106,7 @@ impl FromStr for Amount {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 enum Game {
     Unknown(String),
     NoLimitHoldem,
@@ -90,7 +125,7 @@ impl Game {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 struct Seat {
     number: u8,
     player_id: String,
@@ -103,7 +138,7 @@ impl Seat {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 enum Action {
     // Player actions
     Bet(String, Amount),
@@ -123,13 +158,13 @@ enum Action {
     River(String)
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 struct Card {
     rank: Rank,
     suit: Suit
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 enum Rank {
     Ace,
     King,
@@ -146,7 +181,7 @@ enum Rank {
     Two
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 enum Suit {
     Club,
     Diamond,
@@ -343,6 +378,11 @@ fn parse(raw: String) -> Vec<Hand> {
                 continue;
             }
         };
+
+        if preflop_re.is_match(line) {
+            current_hand.actions.push(Action::PreFlop);
+            continue;
+        }
 
         match flop_re.captures(line) {
             None => (),
