@@ -9,6 +9,7 @@ fn main() {
     let hands = raw("hands-lots.txt");
     let hands = parse(hands);
 
+    //println!("{:#?}", &hands);
     println!("Hands: {}", hands.len());
 
     let mut flops = 0;
@@ -149,13 +150,112 @@ enum Action {
     Muck(String),
     Post(String, Amount),
     Raise(String, Amount, Amount),
-    Show(String, String, String),
+    Show(String, Card, Card),
 
     // Dealer actions
     PreFlop,
-    Flop(String, String, String),
-    Turn(String),
-    River(String)
+    Flop(Card, Card, Card),
+    Turn(Card),
+    River(Card)
+}
+
+#[derive(Clone, Debug, PartialEq)]
+struct Card {
+    rank: Rank,
+    suit: Suit
+}
+
+impl Card {
+    fn new(rank: Rank, suit: Suit) -> Card {
+        Card {rank, suit }
+    }
+}
+
+impl FromStr for Card {
+    type Err = CardParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
+
+        // The suit is always represented by one character at the end of the string (e.g. 'c' for clubs)
+        let suit = &s[s.len() - 1..];
+        let suit = suit.parse::<Suit>()?;
+
+        // The rank is the first one or two characters (e.g. 'A' for ace or "10" for 10).
+        let rank = &s[..s.len() - 1];
+        let rank = rank.parse::<Rank>()?;
+
+        Ok(Card::new(rank, suit))
+    }
+}
+
+#[derive(Clone, Debug)]
+struct CardParseError;
+
+#[derive(Clone, Debug, PartialEq)]
+enum Rank {
+    Ace,
+    King,
+    Queen,
+    Jack,
+    Ten,
+    Nine,
+    Eight,
+    Seven,
+    Six,
+    Five,
+    Four,
+    Three,
+    Two
+}
+
+impl FromStr for Rank {
+    type Err = CardParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
+
+        match s {
+            "A" => Ok(Rank::Ace),
+            "K" => Ok(Rank::King),
+            "Q" => Ok(Rank::Queen),
+            "J" => Ok(Rank::Jack),
+            "10" => Ok(Rank::Ten),
+            "9" => Ok(Rank::Nine),
+            "8" => Ok(Rank::Eight),
+            "7" => Ok(Rank::Seven),
+            "6" => Ok(Rank::Six),
+            "5" => Ok(Rank::Five),
+            "4" => Ok(Rank::Four),
+            "3" => Ok(Rank::Three),
+            "2" => Ok(Rank::Two),
+            _ => Err(CardParseError)
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+enum Suit {
+    Club,
+    Diamond,
+    Heart,
+    Spade
+}
+
+impl FromStr for Suit {
+    type Err = CardParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
+
+        match s {
+            "c" => Ok(Suit::Club),
+            "d" => Ok(Suit::Diamond),
+            "h" => Ok(Suit::Heart),
+            "s" => Ok(Suit::Spade),
+            _ => Err(CardParseError)
+        }
+    }
 }
 
 fn raw(path: &str) -> String {
@@ -337,10 +437,14 @@ fn parse(raw: String) -> Vec<Hand> {
             None => (),
             Some(captures) => {
                 let player_id = captures.name("player_id").unwrap().as_str();
-                let card_1 = captures.name("card_1").unwrap().as_str();
-                let card_2 = captures.name("card_2").unwrap().as_str();
 
-                let action = Action::Show(String::from(player_id), String::from(card_1), String::from(card_2));
+                let card_1 = captures.name("card_1").unwrap().as_str();
+                let card_1 = card_1.parse::<Card>().unwrap();
+
+                let card_2 = captures.name("card_2").unwrap().as_str();
+                let card_2 = card_2.parse::<Card>().unwrap();
+
+                let action = Action::Show(String::from(player_id), card_1, card_2);
 
                 current_hand.actions.push(action);
 
@@ -357,10 +461,15 @@ fn parse(raw: String) -> Vec<Hand> {
             None => (),
             Some(captures) => {
                 let card_1 = captures.name("card_1").unwrap().as_str();
-                let card_2 = captures.name("card_2").unwrap().as_str();
-                let card_3 = captures.name("card_2").unwrap().as_str();
+                let card_1 = card_1.parse::<Card>().unwrap();
 
-                let action = Action::Flop(String::from(card_1), String::from(card_2), String::from(card_3));
+                let card_2 = captures.name("card_2").unwrap().as_str();
+                let card_2 = card_2.parse::<Card>().unwrap();
+
+                let card_3 = captures.name("card_3").unwrap().as_str();
+                let card_3 = card_3.parse::<Card>().unwrap();
+
+                let action = Action::Flop(card_1, card_2, card_3);
 
                 current_hand.actions.push(action);
 
@@ -372,7 +481,9 @@ fn parse(raw: String) -> Vec<Hand> {
             None => (),
             Some(captures) => {
                 let card = captures.name("card").unwrap().as_str();
-                let action = Action::Turn(String::from(card));
+                let card = card.parse::<Card>().unwrap();
+
+                let action = Action::Turn(card);
 
                 current_hand.actions.push(action);
 
@@ -384,7 +495,9 @@ fn parse(raw: String) -> Vec<Hand> {
             None => (),
             Some(captures) => {
                 let card = captures.name("card").unwrap().as_str();
-                let action = Action::River(String::from(card));
+                let card = card.parse::<Card>().unwrap();
+
+                let action = Action::River(card);
 
                 current_hand.actions.push(action);
 
