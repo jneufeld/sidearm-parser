@@ -3,7 +3,9 @@ use std::str::FromStr;
 
 use regex::Regex;
 
-#[derive(Clone, Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Hand {
     pub game: Game,
     pub stake: Amount,
@@ -22,7 +24,7 @@ impl Hand {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Amount {
     pub integer: u32,
     pub fraction: u8
@@ -61,7 +63,7 @@ impl FromStr for Amount {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Game {
     Unknown(String),
     NoLimitHoldem,
@@ -80,7 +82,7 @@ impl Game {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Seat {
     number: u8,
     player_id: String,
@@ -93,7 +95,7 @@ impl Seat {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Action {
     // Player actions
     Bet(String, Amount),
@@ -113,7 +115,7 @@ pub enum Action {
     River(Card)
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Card {
     pub rank: Rank,
     pub suit: Suit
@@ -143,10 +145,10 @@ impl FromStr for Card {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CardParseError;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Rank {
     Ace,
     King,
@@ -188,7 +190,7 @@ impl FromStr for Rank {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Suit {
     Club,
     Diamond,

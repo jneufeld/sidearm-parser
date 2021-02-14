@@ -17,6 +17,13 @@ fn main() {
             .long("input")
             .takes_value(true)
             .help("Input file"))
+        .arg(Arg::with_name("output")
+            .required(false)
+            .default_value("output.json")
+            .short("o")
+            .long("output")
+            .takes_value(true)
+            .help("Output file"))
         .arg(Arg::with_name("stats")
             .required(false)
             .short("s")
@@ -32,10 +39,15 @@ fn main() {
         .get_matches();
 
     let input = matches.value_of("input").unwrap();
+    let output = matches.value_of("output").unwrap();
     let stats = matches.is_present("stats");
     let debug = matches.is_present("debug");
 
     let hands = parse::parse(input);
+    let json = serde_json::to_value(&hands).unwrap();
+    let json = serde_json::to_string(&json).unwrap();
+
+    std::fs::write(output, json).unwrap();
 
     if debug {
         println!("{:#?}", &hands);
