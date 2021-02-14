@@ -158,37 +158,6 @@ enum Action {
     River(String)
 }
 
-#[derive(Clone, Debug, PartialEq)]
-struct Card {
-    rank: Rank,
-    suit: Suit
-}
-
-#[derive(Clone, Debug, PartialEq)]
-enum Rank {
-    Ace,
-    King,
-    Queen,
-    Jack,
-    Ten,
-    Nine,
-    Eight,
-    Seven,
-    Six,
-    Five,
-    Four,
-    Three,
-    Two
-}
-
-#[derive(Clone, Debug, PartialEq)]
-enum Suit {
-    Club,
-    Diamond,
-    Heart,
-    Space
-}
-
 fn raw(path: &str) -> String {
     std::fs::read_to_string(path).unwrap()
 }
