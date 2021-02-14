@@ -5,4 +5,5 @@ authors = ["Jonathan Neufeld <jneufeld@alumni.ubc.ca>"]
 edition = "2018"
 
 [dependencies]
+clap = "2.33"
 regex = "1"
