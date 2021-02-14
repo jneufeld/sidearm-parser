@@ -111,15 +111,47 @@ enum Action {
     Check(String),
     Collect(String, Amount),
     Fold(String),
+    Muck(String),
     Post(String, Amount),
     Raise(String, Amount, Amount),
-    Show, // PlayerId, Card, Card
+    Show(String, String, String),
 
     // Dealer actions
     PreFlop,
-    Flop,
-    Turn,
-    River
+    Flop(String, String, String),
+    Turn(String),
+    River(String)
+}
+
+#[derive(Clone, Debug)]
+struct Card {
+    rank: Rank,
+    suit: Suit
+}
+
+#[derive(Clone, Debug)]
+enum Rank {
+    Ace,
+    King,
+    Queen,
+    Jack,
+    Ten,
+    Nine,
+    Eight,
+    Seven,
+    Six,
+    Five,
+    Four,
+    Three,
+    Two
+}
+
+#[derive(Clone, Debug)]
+enum Suit {
+    Club,
+    Diamond,
+    Heart,
+    Space
 }
 
 fn raw(path: &str) -> String {
@@ -137,14 +169,15 @@ fn parse(raw: String) -> Vec<Hand> {
     let check_re = Regex::new(r"(?P<player_id>.+) - Checks").unwrap();
     let collect_re = Regex::new(r"(?P<player_id>.+) Collects \$(?P<amount>.+) from.+").unwrap();
     let fold_re = Regex::new(r"(?P<player_id>.+) - Folds").unwrap();
+    let muck_re = Regex::new(r"(?P<player_id>.+) - Mucks").unwrap();
     let post_re = Regex::new(r"(?P<player_id>.+) - Posts .+ \$(?P<amount>.+)").unwrap();
     let raise_re = Regex::new(r"(?P<player_id>.+) - Raises \$(?P<raise>.+) to \$(?P<total>.+)").unwrap();
-    let show_re = Regex::new(r"").unwrap();
+    let show_re = Regex::new(r"(?P<player_id>.+) - Shows \[(?P<card_1>.+) (?P<card_2>.+)\]").unwrap();
 
     let preflop_re = Regex::new(r"\*\*\* POCKET CARDS \*\*\*").unwrap();
-    let flop_re = Regex::new(r"\*\*\* FLOP \*\*\*").unwrap();
-    let turn_re = Regex::new(r"\*\*\* TURN \*\*\*").unwrap();
-    let river_re = Regex::new(r"\*\*\* RIVER \*\*\*").unwrap();
+    let flop_re = Regex::new(r"\*\*\* FLOP \*\*\* \[(?P<card_1>.+) (?P<card_2>.+) (?P<card_3>.+)\]").unwrap();
+    let turn_re = Regex::new(r"\*\*\* TURN \*\*\* \[.+\] \[(?P<card>.+)\]").unwrap();
+    let river_re = Regex::new(r"\*\*\* RIVER \*\*\* \[.+\] \[(?P<card>.+)\]").unwrap();
 
     let mut current_hand = Hand::default();
 
@@ -250,6 +283,18 @@ fn parse(raw: String) -> Vec<Hand> {
             }
         };
 
+        match muck_re.captures(line) {
+            None => (),
+            Some(captures) => {
+                let player_id = captures.name("player_id").unwrap().as_str();
+                let action = Action::Muck(String::from(player_id));
+
+                current_hand.actions.push(action);
+
+                continue;
+            }
+        };
+
         match post_re.captures(line) {
             None => (),
             Some(captures) => {
@@ -284,30 +329,68 @@ fn parse(raw: String) -> Vec<Hand> {
             }
         };
 
-        if preflop_re.is_match(line) {
-            current_hand.actions.push(Action::PreFlop);
-            continue;
+        match show_re.captures(line) {
+            None => (),
+            Some(captures) => {
+                let player_id = captures.name("player_id").unwrap().as_str();
+                let card_1 = captures.name("card_1").unwrap().as_str();
+                let card_2 = captures.name("card_2").unwrap().as_str();
+
+                let action = Action::Show(String::from(player_id), String::from(card_1), String::from(card_2));
+
+                current_hand.actions.push(action);
+
+                continue;
+            }
         };
 
-        if flop_re.is_match(line) {
-            current_hand.actions.push(Action::Flop);
-            continue;
+        match flop_re.captures(line) {
+            None => (),
+            Some(captures) => {
+                let card_1 = captures.name("card_1").unwrap().as_str();
+                let card_2 = captures.name("card_2").unwrap().as_str();
+                let card_3 = captures.name("card_2").unwrap().as_str();
+
+                let action = Action::Flop(String::from(card_1), String::from(card_2), String::from(card_3));
+
+                current_hand.actions.push(action);
+
+                continue;
+            }
         };
 
-        if turn_re.is_match(line) {
-            current_hand.actions.push(Action::Turn);
-            continue;
+        match turn_re.captures(line) {
+            None => (),
+            Some(captures) => {
+                let card = captures.name("card").unwrap().as_str();
+                let action = Action::Turn(String::from(card));
+
+                current_hand.actions.push(action);
+
+                continue;
+            }
         };
 
-        if river_re.is_match(line) {
-            current_hand.actions.push(Action::River);
-            continue;
+        match river_re.captures(line) {
+            None => (),
+            Some(captures) => {
+                let card = captures.name("card").unwrap().as_str();
+                let action = Action::River(String::from(card));
+
+                current_hand.actions.push(action);
+
+                continue;
+            }
         };
 
         if line.trim().len() == 0  && current_hand.seats.len() != 0 {
             hands.push(current_hand.clone());
             current_hand = Hand::default();
         }
+    }
+
+    if current_hand.seats.len() != 0 {
+        hands.push(current_hand.clone());
     }
 
     hands
