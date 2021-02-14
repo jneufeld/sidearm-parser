@@ -9,24 +9,26 @@ fn main() {
     let hands = raw("hands-full.txt");
     let hands = parse(hands);
 
-    println!("Hands: {}", hands.len());
     //println!("{:#?}", hands);
+    println!("Hands: {}", hands.len());
 }
 
 #[derive(Clone, Debug)]
 struct Hand {
     game: Game,
     stake: Amount,
-    seats: Vec<Seat>
+    seats: Vec<Seat>,
+    actions: Vec<Action>
 }
 
 impl Hand {
-    fn new(game: Game, stake: Amount, seats: Vec<Seat>) -> Hand {
-        Hand { game, stake, seats }
-    }
-
     fn default() -> Hand {
-        Hand { game: Game::Unknown(String::from("Not Yet Created")), stake: Amount::default(), seats: vec!() }
+        Hand {
+            game: Game::Unknown(String::from("Not Yet Created")),
+            stake: Amount::default(),
+            seats: vec!(),
+            actions: vec!()
+        }
     }
 }
 
@@ -46,6 +48,8 @@ impl FromStr for Amount {
     type Err = ParseIntError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
+
         // Remove optional leading dollar sign (e.g. "$1,500.75" -> "1,500.75")
         let s = s.replace("$", "");
 
@@ -99,6 +103,25 @@ impl Seat {
     }
 }
 
+#[derive(Clone, Debug)]
+enum Action {
+    // Player actions
+    Bet(String, Amount),
+    Call(String, Amount),
+    Check(String),
+    Collect(String, Amount),
+    Fold(String),
+    Post(String, Amount),
+    Raise(String, Amount, Amount),
+    Show, // PlayerId, Card, Card
+
+    // Dealer actions
+    PreFlop,
+    Flop,
+    Turn,
+    River
+}
+
 fn raw(path: &str) -> String {
     std::fs::read_to_string(path).unwrap()
 }
@@ -108,6 +131,20 @@ fn parse(raw: String) -> Vec<Hand> {
 
     let begin_re = Regex::new(r"Stage #\d+: (?P<game>.+) \$(?P<stake>\d+)[ ,].*").unwrap();
     let seat_re = Regex::new(r"Seat (?P<number>\d+) - (?P<player_id>.+) \(\$(?P<stack>.+) in chips\)").unwrap();
+
+    let bet_re = Regex::new(r"(?P<player_id>.+) - Bets \$(?P<amount>.+)").unwrap();
+    let call_re = Regex::new(r"(?P<player_id>.+) - Calls \$(?P<amount>.+)").unwrap();
+    let check_re = Regex::new(r"(?P<player_id>.+) - Checks").unwrap();
+    let collect_re = Regex::new(r"(?P<player_id>.+) Collects \$(?P<amount>.+) from.+").unwrap();
+    let fold_re = Regex::new(r"(?P<player_id>.+) - Folds").unwrap();
+    let post_re = Regex::new(r"(?P<player_id>.+) - Posts .+ \$(?P<amount>.+)").unwrap();
+    let raise_re = Regex::new(r"(?P<player_id>.+) - Raises \$(?P<raise>.+) to \$(?P<total>.+)").unwrap();
+    let show_re = Regex::new(r"").unwrap();
+
+    let preflop_re = Regex::new(r"\*\*\* POCKET CARDS \*\*\*").unwrap();
+    let flop_re = Regex::new(r"\*\*\* FLOP \*\*\*").unwrap();
+    let turn_re = Regex::new(r"\*\*\* TURN \*\*\*").unwrap();
+    let river_re = Regex::new(r"\*\*\* RIVER \*\*\*").unwrap();
 
     let mut current_hand = Hand::default();
 
@@ -120,6 +157,8 @@ fn parse(raw: String) -> Vec<Hand> {
 
                 let stake = captures.name("stake").unwrap().as_str();
                 current_hand.stake = stake.parse::<Amount>().unwrap();
+
+                continue;
             }
         };
 
@@ -137,7 +176,132 @@ fn parse(raw: String) -> Vec<Hand> {
 
                 let seat = Seat::new(number, player_id, stack);
                 current_hand.seats.push(seat);
+
+                continue;
             }
+        };
+
+        match bet_re.captures(line) {
+            None => (),
+            Some(captures) => {
+                let player_id = captures.name("player_id").unwrap().as_str();
+                let amount = captures.name("amount").unwrap().as_str();
+                let amount = amount.parse::<Amount>().unwrap();
+
+                let action = Action::Bet(String::from(player_id), amount);
+
+                current_hand.actions.push(action);
+
+                continue;
+            }
+        };
+
+        match call_re.captures(line) {
+            None => (),
+            Some(captures) => {
+                let player_id = captures.name("player_id").unwrap().as_str();
+                let amount = captures.name("amount").unwrap().as_str();
+                let amount = amount.parse::<Amount>().unwrap();
+
+                let action = Action::Call(String::from(player_id), amount);
+
+                current_hand.actions.push(action);
+
+                continue;
+            }
+        };
+
+        match check_re.captures(line) {
+            None => (),
+            Some(captures) => {
+                let player_id = captures.name("player_id").unwrap().as_str();
+                let action = Action::Check(String::from(player_id));
+
+                current_hand.actions.push(action);
+
+                continue;
+            }
+        };
+
+        match collect_re.captures(line) {
+            None => (),
+            Some(captures) => {
+                let player_id = captures.name("player_id").unwrap().as_str();
+                let amount = captures.name("amount").unwrap().as_str();
+                let amount = amount.parse::<Amount>().unwrap();
+
+                let action = Action::Collect(String::from(player_id), amount);
+
+                current_hand.actions.push(action);
+
+                continue;
+            }
+        };
+
+        match fold_re.captures(line) {
+            None => (),
+            Some(captures) => {
+                let player_id = captures.name("player_id").unwrap().as_str();
+                let action = Action::Fold(String::from(player_id));
+
+                current_hand.actions.push(action);
+
+                continue;
+            }
+        };
+
+        match post_re.captures(line) {
+            None => (),
+            Some(captures) => {
+                let player_id = captures.name("player_id").unwrap().as_str();
+                let amount = captures.name("amount").unwrap().as_str();
+                let amount = amount.parse::<Amount>().unwrap();
+
+                let action = Action::Post(String::from(player_id), amount);
+
+                current_hand.actions.push(action);
+
+                continue;
+            }
+        };
+
+        match raise_re.captures(line) {
+            None => (),
+            Some(captures) => {
+                let player_id = captures.name("player_id").unwrap().as_str();
+
+                let raise = captures.name("raise").unwrap().as_str();
+                let raise = raise.parse::<Amount>().unwrap();
+
+                let total = captures.name("total").unwrap().as_str();
+                let total = total.parse::<Amount>().unwrap();
+
+                let action = Action::Raise(String::from(player_id), raise, total);
+
+                current_hand.actions.push(action);
+
+                continue;
+            }
+        };
+
+        if preflop_re.is_match(line) {
+            current_hand.actions.push(Action::PreFlop);
+            continue;
+        };
+
+        if flop_re.is_match(line) {
+            current_hand.actions.push(Action::Flop);
+            continue;
+        };
+
+        if turn_re.is_match(line) {
+            current_hand.actions.push(Action::Turn);
+            continue;
+        };
+
+        if river_re.is_match(line) {
+            current_hand.actions.push(Action::River);
+            continue;
         };
 
         if line.trim().len() == 0  && current_hand.seats.len() != 0 {
