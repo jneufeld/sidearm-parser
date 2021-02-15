@@ -52,7 +52,7 @@ impl FromStr for Amount {
         let s = s.replace(",", "");
 
         // Split integer and fraction portions (e.g. "1500.75" -> ("1500", "75"))
-        let (integer, fraction) = match s.find(".") {
+        let (integer, fraction) = match s.find('.') {
             None => (s.parse::<u32>().unwrap(), 0),
             Some(decimal_index) => {
                 let integer = s[..decimal_index].parse::<u32>().unwrap();
@@ -471,14 +471,14 @@ pub fn parse(input_file: &str) -> Vec<Hand> {
             }
         };
 
-        if line.trim().len() == 0 && current_hand.seats.len() != 0 {
+        if line.trim().is_empty() && !current_hand.seats.is_empty() {
             hands.push(current_hand.clone());
             current_hand = Hand::default();
         }
     }
 
-    if current_hand.seats.len() != 0 {
-        hands.push(current_hand.clone());
+    if !current_hand.seats.is_empty() {
+        hands.push(current_hand);
     }
 
     hands
