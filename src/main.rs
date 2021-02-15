@@ -29,6 +29,20 @@ fn main() {
                 .help("Output file"),
         )
         .arg(
+            Arg::with_name("showdown")
+                .required(false)
+                .long("showdown-only")
+                .takes_value(false)
+                .help("Output only hands that go to showdown"),
+        )
+        .arg(
+            Arg::with_name("nlh")
+                .required(false)
+                .long("nlh-only")
+                .takes_value(false)
+                .help("Output only hands from NLH games"),
+        )
+        .arg(
             Arg::with_name("stats")
                 .required(false)
                 .short("s")
@@ -48,10 +62,25 @@ fn main() {
 
     let input = matches.value_of("input").unwrap();
     let output = matches.value_of("output").unwrap();
+    let showdown = matches.is_present("showdown");
+    let nlh = matches.is_present("nlh");
     let stats = matches.is_present("stats");
     let debug = matches.is_present("debug");
 
-    let hands = parse::parse(input);
+    let mut hands = parse::parse(input);
+
+    if showdown {
+        hands = hands.into_iter()
+            .filter(|h| h.showdown())
+            .collect();
+    }
+
+    if nlh {
+        hands = hands.into_iter()
+            .filter(|h| h.game == Game::NoLimitHoldem)
+            .collect();
+    }
+
     let json = serde_json::to_value(&hands).unwrap();
     let json = serde_json::to_string(&json).unwrap();
 

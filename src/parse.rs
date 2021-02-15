@@ -22,6 +22,17 @@ impl Hand {
             actions: vec![],
         }
     }
+
+    pub fn showdown(&self) -> bool {
+        for action in self.actions.iter() {
+            match action {
+                Action::Show(_, _, _) => return true,
+                _ => ()
+            };
+        }
+
+        false
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
