@@ -10,7 +10,7 @@ pub struct Hand {
     pub game: Game,
     pub stake: Amount,
     pub seats: Vec<Seat>,
-    pub actions: Vec<Action>
+    pub actions: Vec<Action>,
 }
 
 impl Hand {
@@ -18,8 +18,8 @@ impl Hand {
         Hand {
             game: Game::Unknown(String::from("Not Yet Created")),
             stake: Amount::default(),
-            seats: vec!(),
-            actions: vec!()
+            seats: vec![],
+            actions: vec![],
         }
     }
 }
@@ -27,12 +27,15 @@ impl Hand {
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Amount {
     pub integer: u32,
-    pub fraction: u8
+    pub fraction: u8,
 }
 
 impl Amount {
     fn default() -> Amount {
-        Amount { integer: 0, fraction: 0 }
+        Amount {
+            integer: 0,
+            fraction: 0,
+        }
     }
 }
 
@@ -67,7 +70,7 @@ impl FromStr for Amount {
 pub enum Game {
     Unknown(String),
     NoLimitHoldem,
-    NoLimitHoldemHeadsUp
+    NoLimitHoldemHeadsUp,
 }
 
 impl Game {
@@ -86,12 +89,16 @@ impl Game {
 pub struct Seat {
     number: u8,
     player_id: String,
-    stack: Amount
+    stack: Amount,
 }
 
 impl Seat {
     fn new(number: u8, player_id: String, stack: Amount) -> Seat {
-        Seat { number, player_id, stack }
+        Seat {
+            number,
+            player_id,
+            stack,
+        }
     }
 }
 
@@ -112,18 +119,18 @@ pub enum Action {
     PreFlop,
     Flop(Card, Card, Card),
     Turn(Card),
-    River(Card)
+    River(Card),
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Card {
     pub rank: Rank,
-    pub suit: Suit
+    pub suit: Suit,
 }
 
 impl Card {
     fn new(rank: Rank, suit: Suit) -> Card {
-        Card {rank, suit }
+        Card { rank, suit }
     }
 }
 
@@ -162,7 +169,7 @@ pub enum Rank {
     Five,
     Four,
     Three,
-    Two
+    Two,
 }
 
 impl FromStr for Rank {
@@ -185,7 +192,7 @@ impl FromStr for Rank {
             "4" => Ok(Rank::Four),
             "3" => Ok(Rank::Three),
             "2" => Ok(Rank::Two),
-            _ => Err(CardParseError)
+            _ => Err(CardParseError),
         }
     }
 }
@@ -195,7 +202,7 @@ pub enum Suit {
     Club,
     Diamond,
     Heart,
-    Spade
+    Spade,
 }
 
 impl FromStr for Suit {
@@ -209,7 +216,7 @@ impl FromStr for Suit {
             "d" => Ok(Suit::Diamond),
             "h" => Ok(Suit::Heart),
             "s" => Ok(Suit::Spade),
-            _ => Err(CardParseError)
+            _ => Err(CardParseError),
         }
     }
 }
@@ -220,7 +227,9 @@ pub fn parse(input_file: &str) -> Vec<Hand> {
     let mut hands = Vec::new();
 
     let begin_re = Regex::new(r"Stage #\d+: (?P<game>.+) \$(?P<stake>\d+)[ ,].*").unwrap();
-    let seat_re = Regex::new(r"Seat (?P<number>\d+) - (?P<player_id>.+) \(\$(?P<stack>.+) in chips\)").unwrap();
+    let seat_re =
+        Regex::new(r"Seat (?P<number>\d+) - (?P<player_id>.+) \(\$(?P<stack>.+) in chips\)")
+            .unwrap();
 
     let bet_re = Regex::new(r"(?P<player_id>.+) - Bets \$(?P<amount>.+)").unwrap();
     let call_re = Regex::new(r"(?P<player_id>.+) - Calls \$(?P<amount>.+)").unwrap();
@@ -229,11 +238,14 @@ pub fn parse(input_file: &str) -> Vec<Hand> {
     let fold_re = Regex::new(r"(?P<player_id>.+) - Folds").unwrap();
     let muck_re = Regex::new(r"(?P<player_id>.+) - Mucks").unwrap();
     let post_re = Regex::new(r"(?P<player_id>.+) - Posts .+ \$(?P<amount>.+)").unwrap();
-    let raise_re = Regex::new(r"(?P<player_id>.+) - Raises \$(?P<raise>.+) to \$(?P<total>.+)").unwrap();
-    let show_re = Regex::new(r"(?P<player_id>.+) - Shows \[(?P<card_1>.+) (?P<card_2>.+)\]").unwrap();
+    let raise_re =
+        Regex::new(r"(?P<player_id>.+) - Raises \$(?P<raise>.+) to \$(?P<total>.+)").unwrap();
+    let show_re =
+        Regex::new(r"(?P<player_id>.+) - Shows \[(?P<card_1>.+) (?P<card_2>.+)\]").unwrap();
 
     let preflop_re = Regex::new(r"\*\*\* POCKET CARDS \*\*\*").unwrap();
-    let flop_re = Regex::new(r"\*\*\* FLOP \*\*\* \[(?P<card_1>.+) (?P<card_2>.+) (?P<card_3>.+)\]").unwrap();
+    let flop_re =
+        Regex::new(r"\*\*\* FLOP \*\*\* \[(?P<card_1>.+) (?P<card_2>.+) (?P<card_3>.+)\]").unwrap();
     let turn_re = Regex::new(r"\*\*\* TURN \*\*\* \[.+\] \[(?P<card>.+)\]").unwrap();
     let river_re = Regex::new(r"\*\*\* RIVER \*\*\* \[.+\] \[(?P<card>.+)\]").unwrap();
 
@@ -459,7 +471,7 @@ pub fn parse(input_file: &str) -> Vec<Hand> {
             }
         };
 
-        if line.trim().len() == 0  && current_hand.seats.len() != 0 {
+        if line.trim().len() == 0 && current_hand.seats.len() != 0 {
             hands.push(current_hand.clone());
             current_hand = Hand::default();
         }

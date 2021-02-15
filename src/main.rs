@@ -11,31 +11,39 @@ fn main() {
         .version("0.1.0")
         .author("Jonathan Neufeld <jneufeld@alumni.ubc.ca>")
         .about("Parses poker hands from replayer format to JSON")
-        .arg(Arg::with_name("input")
-            .required(true)
-            .short("i")
-            .long("input")
-            .takes_value(true)
-            .help("Input file"))
-        .arg(Arg::with_name("output")
-            .required(false)
-            .default_value("output.json")
-            .short("o")
-            .long("output")
-            .takes_value(true)
-            .help("Output file"))
-        .arg(Arg::with_name("stats")
-            .required(false)
-            .short("s")
-            .long("stats")
-            .takes_value(false)
-            .help("Prints hand statistics"))
-        .arg(Arg::with_name("debug")
-            .required(false)
-            .short("d")
-            .long("debug")
-            .takes_value(false)
-            .help("Prints debug info"))
+        .arg(
+            Arg::with_name("input")
+                .required(true)
+                .short("i")
+                .long("input")
+                .takes_value(true)
+                .help("Input file"),
+        )
+        .arg(
+            Arg::with_name("output")
+                .required(false)
+                .default_value("output.json")
+                .short("o")
+                .long("output")
+                .takes_value(true)
+                .help("Output file"),
+        )
+        .arg(
+            Arg::with_name("stats")
+                .required(false)
+                .short("s")
+                .long("stats")
+                .takes_value(false)
+                .help("Prints hand statistics"),
+        )
+        .arg(
+            Arg::with_name("debug")
+                .required(false)
+                .short("d")
+                .long("debug")
+                .takes_value(false)
+                .help("Prints debug info"),
+        )
         .get_matches();
 
     let input = matches.value_of("input").unwrap();
@@ -76,20 +84,22 @@ fn main() {
                         match action {
                             Action::Flop(_, _, _) => flops += 1,
                             Action::Turn(_) => turns += 1,
-                            Action::River(_) => rivers +=1,
+                            Action::River(_) => rivers += 1,
                             Action::Show(_, _, _) => {
                                 shows += 1;
                                 break;
-                            },
-                            _ => ()
+                            }
+                            _ => (),
                         }
-                    };
-                },
+                    }
+                }
             };
-
         }
 
         println!("NLH: {}\nNLH HE: {}\nUnknown: {}", nlh, nlh_he, unknown);
-        println!("Flops: {}\nTurns: {}\nRivers: {}\nShowdowns: {}", flops, turns, rivers, shows);
+        println!(
+            "Flops: {}\nTurns: {}\nRivers: {}\nShowdowns: {}",
+            flops, turns, rivers, shows
+        );
     }
 }
